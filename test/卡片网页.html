@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>护肤产品搭配方案</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <style>
+      /* Keep existing styles */
+      /* Add new styles for table import */
+      .table-import {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .batch-download {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        margin: 10px;
+      }
+
+      /* Keep all other existing styles */
+    </style>
+  </head>
+  <body>
+    <div class="input-section">
+      <div class="table-import">
+        <label>导入Excel表格：</label>
+        <input
+          type="file"
+          id="excelFile"
+          accept=".xlsx,.xls"
+          onchange="handleExcelImport(event)"
+        />
+        <button class="batch-download" onclick="batchDownload()">
+          批量生成图片
+        </button>
+      </div>
+
+      <!-- Keep existing control panel -->
+      <div class="control-panel">
+        <!-- Existing controls -->
+      </div>
+
+      <!-- Keep other existing sections -->
+    </div>
+    <div class="card-container" id="capture">
+      <!-- Keep existing product combo template -->
+    </div>
+    <button class="download-btn" onclick="downloadCard()">保存图片</button>
+
+    <script>
+      // Keep existing functions
+      async function handleExcelImport(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+          // Store data globally for batch processing
+          window.importedData = jsonData;
+
+          // Clear existing combos
+          const container = document.getElementById("capture");
+          container.innerHTML = "";
+
+          // Create first combo as preview
+          if (jsonData.length > 0) {
+            createComboFromData(jsonData[0]);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      function createComboFromData(data) {
+        const combo = document.createElement("div");
+        combo.className = "product-combo";
+
+        // Create product 1
+        const product1 = createProduct(data.product1_name, data.product1_image);
+        combo.appendChild(product1);
+
+        // Add + operator
+        const plus = document.createElement("div");
+        plus.className = "operator";
+        plus.textContent = "+";
+        combo.appendChild(plus);
+
+        // Create product 2
+        const product2 = createProduct(data.product2_name, data.product2_image);
+        combo.appendChild(product2);
+
+        // Add = operator
+        const equals = document.createElement("div");
+        equals.className = "operator";
+        equals.textContent = "=";
+        combo.appendChild(equals);
+
+        // Add result
+        const result = document.createElement("div");
+        result.className = "result";
+        result.textContent = data.result;
+        combo.appendChild(result);
+
+        document.getElementById("capture").appendChild(combo);
+      }
+
+      function createProduct(name, imageUrl) {
+        const product = document.createElement("div");
+        product.className = "product";
+
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.style.display = "none";
+        input.onchange = (e) => updateProductImage(e, input);
+
+        const img = document.createElement("img");
+        img.src = imageUrl || "placeholder.png";
+        img.alt = "产品";
+        img.onclick = () => input.click();
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "product-name";
+        nameDiv.contentEditable = true;
+        nameDiv.textContent = name;
+
+        product.appendChild(input);
+        product.appendChild(img);
+        product.appendChild(nameDiv);
+
+        return product;
+      }
+
+      async function batchDownload() {
+        if (!window.importedData) return;
+
+        const zip = new JSZip();
+        const container = document.getElementById("capture");
+
+        for (let i = 0; i < window.importedData.length; i++) {
+          // Clear and create new combo
+          container.innerHTML = "";
+          createComboFromData(window.importedData[i]);
+
+          // Generate image
+          const canvas = await html2canvas(container);
+          const imageData = canvas.toDataURL().split(",")[1];
+          zip.file(`护肤搭配方案_${i + 1}.png`, imageData, { base64: true });
+        }
+
+        // Download zip file
+        zip.generateAsync({ type: "blob" }).then(function (content) {
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(content);
+          link.download = "护肤搭配方案.zip";
+          link.click();
+        });
+      }
+
+      // Keep all other existing functions
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  </body>
+</html>

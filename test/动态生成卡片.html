@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>护肤产品搭配方案生成器</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+      /* 基础样式保持不变 */
+      body {
+        background: #f5f5f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        gap: 20px;
+      }
+
+      /* 卡片容器固定大小 */
+      .card-container {
+        width: 400px;
+        height: 600px; /* 固定高度 */
+        position: relative;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden; /* 防止内容溢出 */
+      }
+
+      /* 背景图片容器 */
+      .card-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+
+      .card-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* 内容区域 */
+      .card-content {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      /* 产品组合容器 */
+      .product-combos {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .product-combo {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+      }
+
+      /* 设置面板新增控制按钮 */
+      .combo-controls {
+        margin: 20px 0;
+        display: flex;
+        gap: 10px;
+      }
+
+      .control-btn {
+        padding: 8px 16px;
+        background: #0288d1;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .control-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="settings-panel">
+      <!-- 背景设置 -->
+      <div class="setting-group">
+        <h3>背景设置</h3>
+        <input type="file" id="bg-upload" accept="image/*" />
+      </div>
+
+      <!-- 组合控制 -->
+      <div class="combo-controls">
+        <button class="control-btn" id="add-combo">添加组合</button>
+        <button class="control-btn" id="remove-combo">删除组合</button>
+      </div>
+
+      <!-- 动态生成的设置组 -->
+      <div id="combo-settings"></div>
+    </div>
+
+    <div class="card-container" id="capture">
+      <div class="card-bg">
+        <img id="bg-image" src="placeholder.jpg" alt="" />
+      </div>
+      <div class="card-content">
+        <div class="product-combos" id="product-combos">
+          <!-- 动态生成的产品组合 -->
+        </div>
+      </div>
+      <button class="download-btn" onclick="downloadCard()">
+        生成并保存图片
+      </button>
+    </div>
+
+    <script>
+      let comboCount = 0;
+      const MAX_COMBOS = 4;
+
+      // 初始化
+      function init() {
+        addCombo();
+        updateLayout();
+      }
+
+      // 添加组合
+      function addCombo() {
+        if (comboCount >= MAX_COMBOS) return;
+
+        comboCount++;
+        addComboSettings();
+        addComboDisplay();
+        updateLayout();
+        updateControls();
+      }
+
+      // 删除组合
+      function removeCombo() {
+        if (comboCount <= 1) return;
+
+        const settings = document.getElementById(`combo-setting-${comboCount}`);
+        const display = document.getElementById(`combo-${comboCount}`);
+
+        settings.remove();
+        display.remove();
+        comboCount--;
+
+        updateLayout();
+        updateControls();
+      }
+
+      // 更新布局
+      function updateLayout() {
+        const combos = document.querySelectorAll(".product-combo");
+        const height = `${100 / comboCount}%`;
+
+        combos.forEach((combo) => {
+          combo.style.height = height;
+        });
+      }
+
+      // 更新控制按钮状态
+      function updateControls() {
+        document.getElementById("add-combo").disabled =
+          comboCount >= MAX_COMBOS;
+        document.getElementById("remove-combo").disabled = comboCount <= 1;
+      }
+
+      // 事件监听
+      document.getElementById("add-combo").addEventListener("click", addCombo);
+      document
+        .getElementById("remove-combo")
+        .addEventListener("click", removeCombo);
+      document
+        .getElementById("bg-upload")
+        .addEventListener("change", handleBgUpload);
+
+      // 背景图片上传处理
+      function handleBgUpload(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            document.getElementById("bg-image").src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+      // 下载功能
+      function downloadCard() {
+        html2canvas(document.getElementById("capture")).then((canvas) => {
+          const link = document.createElement("a");
+          link.download = "护肤搭配方案.png";
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      }
+
+      // 初始化页面
+      init();
+    </script>
+  </body>
+</html>
